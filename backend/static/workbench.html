@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraPulse AIR — QA &amp; Verification Workbench</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #111827;
+            --bg-card-hover: #1f2937;
+            --border-color: #374151;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --pass-bg: #064e3b;
+            --pass-text: #34d399;
+            --fail-bg: #7f1d1d;
+            --fail-text: #f87171;
+            --partial-bg: #78350f;
+            --partial-text: #fbbf24;
+            --mocked-bg: #581c87;
+            --mocked-text: #c084fc;
+            --blocked-bg: #7c2d12;
+            --blocked-text: #fb923c;
+            --unverified-bg: #1e293b;
+            --unverified-text: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 1.5rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.25rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .brand h1 { font-size: 1.5rem; font-weight: 700; color: #60a5fa; }
+        .badge-live {
+            background: #1e3a8a;
+            color: #93c5fd;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        /* Test Coverage Matrix Banner */
+        .matrix-container {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .matrix-header h2 {
+            font-size: 1.1rem;
+            color: #93c5fd;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .matrix-stats {
+            display: flex;
+            gap: 1.25rem;
+            align-items: center;
+        }
+        .matrix-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+        }
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            margin-top: 0.5rem;
+        }
+        .matrix-table th, .matrix-table td {
+            padding: 0.45rem 0.65rem;
+            text-align: left;
+            border-bottom: 1px solid #1f2937;
+        }
+        .matrix-table th { background: #1e293b; color: #cbd5e1; font-weight: 600; }
+        .matrix-table tr:hover td { background: #111827; }
+
+        .progress-bar-bg {
+            background: #1e293b;
+            border-radius: 9999px;
+            height: 8px;
+            overflow: hidden;
+            width: 100%;
+            min-width: 80px;
+        }
+        .progress-bar-fill {
+            background: #10b981;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        nav.tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+            background: #1e293b55;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 0.5rem;
+        }
+        .card-header h3 { font-size: 1.1rem; color: #e2e8f0; }
+
+        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 500; }
+        select, input, textarea {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.15rem;
+            border-radius: 0.375rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #374151; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-success { background: #059669; }
+        .btn-success:hover { background: #047857; }
+        .btn-warning { background: #d97706; }
+        .btn-warning:hover { background: #b45309; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.22rem 0.55rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-PASS { background: var(--pass-bg); color: var(--pass-text); }
+        .status-FAIL { background: var(--fail-bg); color: var(--fail-text); }
+        .status-PARTIAL { background: var(--partial-bg); color: var(--partial-text); }
+        .status-MOCKED { background: var(--mocked-bg); color: var(--mocked-text); }
+        .status-BLOCKED { background: var(--blocked-bg); color: var(--blocked-text); }
+        .status-UNVERIFIED { background: var(--unverified-bg); color: var(--unverified-text); }
+
+        pre {
+            background: #030712;
+            border: 1px solid #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            font-size: 0.82rem;
+            color: #e5e7eb;
+            max-height: 400px;
+        }
+
+        .meta-list {
+            list-style: none;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+        .meta-list li {
+            padding: 0.35rem 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #1e293b;
+        }
+        .meta-list li span:first-child { color: var(--text-muted); }
+
+        .timeline {
+            border-left: 2px solid #374151;
+            padding-left: 1rem;
+            margin-left: 0.5rem;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -1.35rem;
+            top: 0.3rem;
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        .timeline-body {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: #0f172a;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        table.audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+        }
+        table.audit-table th, table.audit-table td {
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #1f2937;
+        }
+        table.audit-table th { background: #1f2937; color: #93c5fd; }
+
+        .score-circle {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: #1e3a8a;
+            border: 4px solid #60a5fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .score-value { font-size: 1.8rem; font-weight: 800; color: #ffffff; }
+        .score-label { font-size: 0.7rem; color: #93c5fd; text-transform: uppercase; font-weight: 600; }
+
+        .batch-banner {
+            background: #1e293b;
+            padding: 0.6rem 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <i class="fa-solid fa-wind" style="font-size: 1.75rem; color: #60a5fa;"></i>
+            <div>
+                <h1>TerraPulse AIR — QA &amp; Verification Workbench</h1>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Permanent Automated Testing, Defect Diagnostic &amp; Regression Repair Centre</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-warning" onclick="executeFullSuite()"><i class="fa-solid fa-bolt"></i> Run Entire QA Suite</button>
+            <a href="/" class="btn btn-secondary" style="font-size: 0.82rem; text-decoration: none;">
+                <i class="fa-solid fa-gauge"></i> Main App
+            </a>
+        </div>
+    </header>
+
+    <!-- LIVE PERSISTENT TEST COVERAGE MATRIX -->
+    <div class="matrix-container" id="coverage-container">
+        <div class="matrix-header">
+            <h2><i class="fa-solid fa-table-cells"></i> Live Test Coverage Matrix</h2>
+            <div class="matrix-stats">
+                <span class="matrix-stat-item"><strong id="stat-total">0</strong> Total Tests</span>
+                <span class="matrix-stat-item" style="color: #34d399;"><strong id="stat-pass">0</strong> Passed</span>
+                <span class="matrix-stat-item" style="color: #fbbf24;"><strong id="stat-partial">0</strong> Partial</span>
+                <span class="matrix-stat-item" style="color: #f87171;"><strong id="stat-fail">0</strong> Failed</span>
+                <span class="matrix-stat-item" style="color: #fb923c;"><strong id="stat-blocked">0</strong> Blocked</span>
+                <span class="matrix-stat-item" style="color: #94a3b8;"><strong id="stat-pending">0</strong> Pending</span>
+                <span class="matrix-stat-item"><strong id="stat-rate" style="color: #60a5fa; font-size: 1.05rem;">0%</strong> Pass Rate</span>
+                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="loadCoverageMatrix()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+        </div>
+        <table class="matrix-table">
+            <thead>
+                <tr>
+                    <th style="width: 22%;">Functional Area</th>
+                    <th style="width: 32%;">Subcomponents Tested</th>
+                    <th style="text-align: center; width: 7%;">Tests</th>
+                    <th style="text-align: center; width: 7%; color: #34d399;">Pass</th>
+                    <th style="text-align: center; width: 7%; color: #fbbf24;">Partial</th>
+                    <th style="text-align: center; width: 7%; color: #f87171;">Fail</th>
+                    <th style="text-align: center; width: 7%; color: #94a3b8;">Pending</th>
+                    <th style="width: 11%;">Coverage</th>
+                </tr>
+            </thead>
+            <tbody id="matrix-body">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1rem;">Loading Live Test Coverage Matrix...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-component', this)"><i class="fa-solid fa-cubes"></i> 1. Component Lab (31)</button>
+        <button class="tab-btn" onclick="switchTab('tab-integration', this)"><i class="fa-solid fa-diagram-project"></i> 2. Integration Lab (12)</button>
+        <button class="tab-btn" onclick="switchTab('tab-agent', this)"><i class="fa-solid fa-brain"></i> 3. Agent Loop Lab (19)</button>
+        <button class="tab-btn" onclick="switchTab('tab-prompt', this)"><i class="fa-solid fa-vial-circle-check"></i> 4. Prompt Arena (28)</button>
+        <button class="tab-btn" onclick="switchTab('tab-audit', this)"><i class="fa-solid fa-file-shield"></i> 5. Audit &amp; System Health</button>
+    </nav>
+
+    <!-- TAB 1: COMPONENT LAB -->
+    <div id="tab-component" class="tab-content active">
+        <div class="batch-banner">
+            <span><i class="fa-solid fa-layer-group"></i> <strong>Component Testing Lab:</strong> Verifies every backend unit, external provider, MCP server and parser in strict isolation.</span>
+            <button class="btn btn-secondary" id="btn-batch-comp" onclick="executeBatchComponentTests()"><i class="fa-solid fa-forward-step"></i> Execute All 31 Component Tests</button>
+        </div>
+        <div class="grid-2">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-vial"></i> Select Subcomponent</h3>
+                    </div>
+                    <label for="comp-select">Subcomponent Specification:</label>
+                    <select id="comp-select" onchange="updateComponentInputTemplate()">
+                        <optgroup label="Module A: OpenAQ v3 Air Quality Data">
+                            <option value="openaq_connectivity">OpenAQ v3 API Connectivity</option>
+                            <option value="station_discovery">Monitoring Station Discovery (Nearby RVCE)</option>
+                            <option value="measurement_retrieval">Latest Measurement Retrieval</option>
+                            <option value="openaq_radius_cap">API Radius Cap Enforcement (25,000 m)</option>
+                            <option value="openaq_pagination_meta">Multi-page OpenAQ Pagination Metadata</option>
+                            <option value="openaq_disambiguate_rvce">Disambiguate RVCE (3409385) vs Kalaburgi (3409386)</option>
+                            <option value="openaq_staleness_detection">Measurement Staleness Detection (&gt; 24h)</option>
+                            <option value="openaq_historical_hourly">Historical Hourly Sensor Observations</option>
+                            <option value="openaq_station_details">Station Metadata &amp; Physical Sensor Counts</option>
+                        </optgroup>
+                        <optgroup label="Geospatial Intelligence">
+                            <option value="geocoding_rvce">Geocode RV College of Engineering</option>
+                            <option value="geocoding_fictional">Fictional Location Rejection</option>
+                            <option value="coordinate_validation">Coordinate Validation (-90..90, -180..180)</option>
+                            <option value="investigation_buffer_metric">Metric 2 km Investigation Buffer</option>
+                            <option value="geospatial_feature_classification">Map Feature Classification (Source vs Reference)</option>
+                        </optgroup>
+                        <optgroup label="Scientific Research Engine">
+                            <option value="research_crossref_search">Crossref Publication Discovery</option>
+                            <option value="research_doi_verify">Scholarly DOI Verification Registry</option>
+                            <option value="research_wikipedia_search">Wikipedia Environmental Search</option>
+                            <option value="research_wikipedia_summary">Wikipedia Article Summary &amp; Canonical URL</option>
+                            <option value="research_scientific_integrity">Scientific Citation Integrity (Zero Hallucination)</option>
+                        </optgroup>
+                        <optgroup label="Pollutant Intelligence &amp; Analysis">
+                            <option value="pollutant_known_pm25">Known Pollutant Profile (PM2.5)</option>
+                            <option value="pollutant_unknown_rejection">Unknown Pollutant Rejection (XYZ-927)</option>
+                            <option value="pollutant_comparison">6-Pollutant Comparative Analysis</option>
+                            <option value="cause_analysis_medical_boundary">Cause Analysis Medical Diagnosis Boundary</option>
+                            <option value="emission_source_classification">Overpass Candidate Facility Classification</option>
+                        </optgroup>
+                        <optgroup label="Agent Orchestration, LLM &amp; Persistence">
+                            <option value="llm_multi_json_parser">Multi-JSON Concatenated Action Decoder</option>
+                            <option value="llm_provider">LLM Provider Adapter Health (Ollama &amp; Gemini)</option>
+                            <option value="tool_calling">Tool Calling Schema Discovery</option>
+                            <option value="mcp_server">MCP Servers Online Verification</option>
+                            <option value="mcp_client">MCP Client Tool Execution</option>
+                            <option value="api_sqlite_persistence">Resilient SQLite Storage Persistence</option>
+                            <option value="api_health">FastAPI Gateway Health Check</option>
+                        </optgroup>
+                    </select>
+
+                    <label for="comp-input">Custom Input (JSON):</label>
+                    <textarea id="comp-input" rows="4">{}</textarea>
+
+                    <button class="btn" id="btn-run-comp" onclick="executeComponentTest()">
+                        <i class="fa-solid fa-play"></i> Run Independent Test
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-square-poll-vertical"></i> Execution Result</h3>
+                        <span id="comp-status-badge" class="status-badge status-UNVERIFIED">Awaiting Test</span>
+                    </div>
+
+                    <ul class="meta-list">
+                        <li><span>Test ID:</span> <strong id="comp-res-id">—</strong></li>
+                        <li><span>Component:</span> <span id="comp-res-name">—</span></li>
+                        <li><span>Execution Time:</span> <strong id="comp-res-time">—</strong></li>
+                        <li><span>Expected Behavior:</span> <span id="comp-res-expected" style="font-size: 0.8rem; text-align: right; max-width: 60%;">—</span></li>
+                    </ul>
+
+                    <label>Raw Output / Verification Evidence:</label>
+                    <pre id="comp-res-output">// Test output will appear here after execution...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: INTEGRATION LAB -->
+    <div id="tab-integration" class="tab-content">
+        <div class="batch-banner">
+            <span><i class="fa-solid fa-diagram-project"></i> <strong>Integration Lab:</strong> Executes end-to-end multi-module pipelines, data contract validations and error propagation paths.</span>
+            <button class="btn btn-secondary" id="btn-batch-integ" onclick="executeBatchIntegrationTests()"><i class="fa-solid fa-forward-step"></i> Execute All 12 Integration Scenarios</button>
+        </div>
+        <div class="grid-2">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-network-wired"></i> Select Workflow Scenario</h3>
+                    </div>
+                    <label for="integ-select">Integration Workflow:</label>
+                    <select id="integ-select">
+                        <option value="INT-01">INT-01: User query &rarr; Pollutant intelligence &rarr; Research &rarr; LLM</option>
+                        <option value="INT-02">INT-02: Location &rarr; Geocoding &rarr; OpenAQ discovery &rarr; Measurements</option>
+                        <option value="INT-03">INT-03: Measurements &rarr; Cause analysis &rarr; Buffer &rarr; Map GeoJSON</option>
+                        <option value="INT-04">INT-04: Research retrieval &rarr; Metadata verification &rarr; Synthesis</option>
+                        <option value="INT-05">INT-05: Location &rarr; Nearby sources &rarr; Distance calculation &rarr; Map</option>
+                        <option value="INT-06">INT-06: Research + Pollution measurements + LLM &rarr; Investigation Report</option>
+                        <option value="INT-07">INT-07: Error propagation (Invalid coordinates lat 125, lon 210)</option>
+                        <option value="INT-08">INT-08: Stale measurement pipeline &rarr; Disclose limitation</option>
+                        <option value="INT-09">INT-09: Multi-station spatial variance (Conflicting measurements)</option>
+                        <option value="INT-10">INT-10: Research literature &rarr; OpenAQ citation cross-validation</option>
+                        <option value="INT-11">INT-11: SQLite offline fallback on MongoDB disconnect</option>
+                        <option value="INT-12">INT-12: Full end-to-end investigation (RVCE Bengaluru)</option>
+                    </select>
+
+                    <button class="btn" id="btn-run-integ" onclick="executeIntegrationTest()">
+                        <i class="fa-solid fa-play"></i> Execute Connected Workflow
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-list-check"></i> Stage-by-Stage Verification</h3>
+                        <span id="integ-status-badge" class="status-badge status-UNVERIFIED">Awaiting Execution</span>
+                    </div>
+
+                    <ul class="meta-list">
+                        <li><span>Scenario ID:</span> <strong id="integ-res-id">—</strong></li>
+                        <li><span>Total Workflow Duration:</span> <strong id="integ-res-time">—</strong></li>
+                    </ul>
+
+                    <label>Stage Execution Results &amp; Data Transferred:</label>
+                    <pre id="integ-res-output">// Stage-by-stage results will appear here...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: AGENT LOOP LAB -->
+    <div id="tab-agent" class="tab-content">
+        <div class="batch-banner">
+            <span><i class="fa-solid fa-brain"></i> <strong>Agent Loop Lab:</strong> Validates ReAct reasoning, stopping policies (Scenarios A–F), tool selection and non-hallucination.</span>
+            <button class="btn btn-secondary" id="btn-batch-agent" onclick="executeBatchAgentTests()"><i class="fa-solid fa-forward-step"></i> Execute Agent Benchmark Suite (10 Tests)</button>
+        </div>
+        <div class="grid-2">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-robot"></i> Select Agent Test Case</h3>
+                    </div>
+                    <label for="agent-tc-select">Test Case / Stopping Scenario:</label>
+                    <select id="agent-tc-select">
+                        <optgroup label="Autonomous Stopping Challenge Scenarios (Mandatory)">
+                            <option value="14">TC-14: Stopping Scenario A: Sufficient evidence proactively triggers termination</option>
+                            <option value="15">TC-15: Stopping Scenario B: Stale / insufficient data prevents premature conclusion</option>
+                            <option value="16">TC-16: Stopping Scenario C: Conflicting station data initiates localized inquiry</option>
+                            <option value="17">TC-17: Stopping Scenario D: Zero stations in 25km radius declared inconclusive</option>
+                            <option value="18">TC-18: Stopping Scenario E: External API failure recovery &amp; honest reporting</option>
+                            <option value="19">TC-19: Stopping Scenario F: Safe budget exhaustion synthesis</option>
+                        </optgroup>
+                        <optgroup label="Autonomous Reasoning &amp; Geographic Scope Scenarios (TC-20 - TC-26)">
+                            <option value="20">TC-20: Geographic Scope: Nationwide request (Find emission sources in USA)</option>
+                            <option value="21">TC-21: Geographic Scope: State-level request (Find emission sources in California)</option>
+                            <option value="22">TC-22: Local source discovery: Near RVCE</option>
+                            <option value="23">TC-23: Empty emission-source search handling (Non-absence policy)</option>
+                            <option value="24">TC-24: OpenAQ 25 stations without measurements (Stations != Sources)</option>
+                            <option value="25">TC-25: Tool failure evaluation &amp; available fallback</option>
+                            <option value="26">TC-26: Exhausted searches without evidence (INCONCLUSIVE reporting)</option>
+                        </optgroup>
+                        <optgroup label="ReAct Agent Behavioural Suite">
+                            <option value="1">TC-01: Single-tool execution</option>
+                            <option value="2">TC-02: Multiple sequential tool calls</option>
+                            <option value="3">TC-03: Missing information handling</option>
+                            <option value="4">TC-04: Unknown pollutant handling (XYZ-927)</option>
+                            <option value="5">TC-05: Empty research handling (QX-999)</option>
+                            <option value="6">TC-06: Geospatial coordinate validation (Lat 125, Lon 210)</option>
+                            <option value="7">TC-07: Investigation buffer generation (2 km)</option>
+                            <option value="8">TC-08: Failure recovery and reporting</option>
+                            <option value="9">TC-09: Medical disclaimer enforcement</option>
+                            <option value="10">TC-10: Repeated-call prevention</option>
+                            <option value="11">TC-11: Maximum iteration handling</option>
+                            <option value="12">TC-12: Structured final answer verification</option>
+                            <option value="13">TC-13: Non-hallucination verification</option>
+                        </optgroup>
+                    </select>
+
+                    <button class="btn" id="btn-run-agent" onclick="executeAgentTest()">
+                        <i class="fa-solid fa-play"></i> Submit to Agent Endpoint
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-timeline"></i> Execution Event Timeline</h3>
+                        <span id="agent-status-badge" class="status-badge status-UNVERIFIED">Awaiting Run</span>
+                    </div>
+
+                    <ul class="meta-list">
+                        <li><span>Agent Run ID:</span> <strong id="agent-run-id">—</strong></li>
+                        <li><span>ReAct Iterations:</span> <span id="agent-iterations">—</span></li>
+                        <li><span>Tools Executed:</span> <span id="agent-tools">—</span></li>
+                        <li><span>Duration:</span> <strong id="agent-dur">—</strong></li>
+                    </ul>
+
+                    <label>Chronological Events &amp; Observations:</label>
+                    <div id="agent-timeline" class="timeline" style="margin-top: 0.5rem; max-height: 400px; overflow-y: auto;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Events will appear chronologically here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: PROMPT ARENA -->
+    <div id="tab-prompt" class="tab-content">
+        <div class="batch-banner">
+            <span><i class="fa-solid fa-vial-circle-check"></i> <strong>Prompt Arena (P01 &ndash; P35):</strong> Preserves original 18 prompts and adds expanded coverage for RVCE, OpenAQ pagination, disambiguation, autonomous reasoning, and scope boundaries.</span>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="runPromptBatch(['P01', 'P03', 'P08', 'P12', 'P19', 'P22'])">
+                    <i class="fa-solid fa-bolt"></i> Run Core Batch (6)
+                </button>
+                <button class="btn btn-secondary" onclick="executeBatchPromptTests()">
+                    <i class="fa-solid fa-forward-step"></i> Run All 28 Prompts
+                </button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-terminal"></i> Natural Language Prompt Arena</h3>
+                <button class="btn" id="btn-run-prompt" onclick="executePromptTest()">
+                    <i class="fa-solid fa-play"></i> Run Selected Prompt
+                </button>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label for="prompt-select">Predefined Prompt Specification:</label>
+                    <select id="prompt-select" onchange="updatePromptPreview()">
+                        <optgroup label="Original Preserved Prompts (P01 - P18)">
+                            <option value="P01">P01 &mdash; Pollutant investigation (PM2.5)</option>
+                            <option value="P02">P02 &mdash; Pollutant comparison (6 pollutants)</option>
+                            <option value="P03">P03 &mdash; Unknown pollutant (XYZ-927)</option>
+                            <option value="P04">P04 &mdash; Research verification (5 PM2.5 papers)</option>
+                            <option value="P05">P05 &mdash; Conflicting research (Urban aerosols)</option>
+                            <option value="P06">P06 &mdash; Empty research results (QX-999)</option>
+                            <option value="P07">P07 &mdash; Environmental cause analysis</option>
+                            <option value="P08">P08 &mdash; Local air-quality (Bengaluru)</option>
+                            <option value="P09">P09 &mdash; Historical measurements</option>
+                            <option value="P10">P10 &mdash; Geospatial mapping (Delhi, Beijing, London, NY)</option>
+                            <option value="P11">P11 &mdash; Investigation radius (2 km buffer)</option>
+                            <option value="P12">P12 &mdash; Invalid coordinates (125, 210)</option>
+                            <option value="P13">P13 &mdash; Complex multi-tool investigation (Bengaluru NO2)</option>
+                            <option value="P14">P14 &mdash; Autonomous investigation</option>
+                            <option value="P15">P15 &mdash; Failure recovery</option>
+                            <option value="P16">P16 &mdash; Ambiguous request (Springfield)</option>
+                            <option value="P17">P17 &mdash; No-data request</option>
+                            <option value="P18">P18 &mdash; Full autonomous report</option>
+                        </optgroup>
+                        <optgroup label="Expanded Audit Prompts (P19 - P28)">
+                            <option value="P19">P19 &mdash; Geospatial: RV College &amp; 2 km Buffer</option>
+                            <option value="P20">P20 &mdash; Geospatial: Fictional Location Rejection</option>
+                            <option value="P21">P21 &mdash; OpenAQ: Pagination Across India</option>
+                            <option value="P22">P22 &mdash; OpenAQ: Disambiguate RVCE vs Kalaburgi</option>
+                            <option value="P23">P23 &mdash; Research: Wikipedia Environmental Summary</option>
+                            <option value="P24">P24 &mdash; Research: Crossref DOI Verification</option>
+                            <option value="P25">P25 &mdash; Emission Sources: Overpass Candidate Discovery</option>
+                            <option value="P26">P26 &mdash; Evidence Synthesis: Competing Hypotheses</option>
+                            <option value="P27">P27 &mdash; Autonomous Stopping: Stale Data Handling</option>
+                            <option value="P28">P28 &mdash; Autonomous Stopping: Divergent Station Pattern</option>
+                        </optgroup>
+                        <optgroup label="Autonomous Reasoning &amp; Geographic Scope Suite (P29 - P35)">
+                            <option value="P29">P29 &mdash; Nationwide Scope: Emission Sources in USA</option>
+                            <option value="P30">P30 &mdash; State-Level Scope: Emission Sources in California</option>
+                            <option value="P31">P31 &mdash; Local Source Discovery: Near RVCE</option>
+                            <option value="P32">P32 &mdash; Empty Emission Results: Non-Absence Policy</option>
+                            <option value="P33">P33 &mdash; Station vs Source Disambiguation: 25 Stations No Readings</option>
+                            <option value="P34">P34 &mdash; Tool Failure &amp; Fallback: Alternate Scientific Source</option>
+                            <option value="P35">P35 &mdash; Exhausted Search: Inconclusive Declaration</option>
+                        </optgroup>
+                    </select>
+
+                    <label for="prompt-text">Prompt Sent to Agent:</label>
+                    <textarea id="prompt-text" rows="5"></textarea>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0;">Evaluation &amp; Actual Agent Response:</label>
+                        <span id="prompt-status-badge" class="status-badge status-UNVERIFIED">Awaiting Submission</span>
+                    </div>
+                    <pre id="prompt-res-output" style="height: 220px;">// Agent synthesis and tool audit will render here...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: AUDIT & REPORTS -->
+    <div id="tab-audit" class="tab-content">
+        <div class="grid-2">
+            <div>
+                <div class="card" style="text-align: center;">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-pie"></i> System Readiness &amp; Integrity Audit</h3>
+                        <button class="btn btn-secondary" onclick="loadAuditReport()"><i class="fa-solid fa-rotate"></i> Re-Scan</button>
+                    </div>
+
+                    <div class="score-circle">
+                        <div class="score-value" id="audit-score">100%</div>
+                        <div class="score-label">Readiness</div>
+                    </div>
+
+                    <div style="display: flex; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <a href="/api/qa/export/json" download class="btn btn-secondary" style="text-decoration: none;">
+                            <i class="fa-solid fa-file-code"></i> Export JSON
+                        </a>
+                        <a href="/api/qa/export/csv" download class="btn btn-secondary" style="text-decoration: none;">
+                            <i class="fa-solid fa-file-csv"></i> Export CSV
+                        </a>
+                        <button class="btn btn-success" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> Print / Save Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-circle-exclamation"></i> Mock &amp; Fake Data Detection</h3>
+                    </div>
+                    <div id="audit-mock-summary" style="font-size: 0.85rem; color: #10b981; font-weight: 600; margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-check-circle"></i> Clean: 0 hardcoded runtime fixtures or fake data objects detected in production code.
+                    </div>
+                    <div id="audit-mock-details"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-plug-circle-check"></i> Live External API Connectivity</h3>
+                    </div>
+                    <table class="audit-table">
+                        <thead>
+                            <tr><th>Provider / Subsystem</th><th>Status &amp; Verification</th></tr>
+                        </thead>
+                        <tbody id="audit-api-body">
+                            <tr><td>OpenAQ API v3</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>Crossref Works API</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>OpenStreetMap Nominatim</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>Wikipedia API</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>LLM Gemini Provider</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>LLM Ollama Provider</td><td><span class="status-badge status-PASS">ONLINE</span></td></tr>
+                            <tr><td>Persistence Subsystem</td><td><span class="status-badge status-PASS">ONLINE (SQLite Resilient Fallback)</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-circle-info"></i> Transparent Limitations &amp; Fallbacks</h3>
+                    </div>
+                    <ul id="audit-limitations" style="font-size: 0.82rem; color: var(--text-muted); padding-left: 1.25rem;">
+                        <li style="margin-bottom: 0.4rem;">Local MongoDB daemon is not running on this host; resilient SQLite local fallback engine actively guarantees persistence without data loss.</li>
+                        <li style="margin-bottom: 0.4rem;">Docker daemon is not running on this host; Dockerfiles and docker-compose configurations are ready for deployment.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (btn) btn.classList.add('active');
+            if (tabId === 'tab-audit') loadAuditReport();
+        }
+
+        // ==========================================
+        // TEST COVERAGE MATRIX LOADER
+        // ==========================================
+        async function loadCoverageMatrix() {
+            try {
+                const res = await fetch('/api/qa/coverage');
+                const cov = await res.json();
+                
+                // Update overall stats
+                document.getElementById('stat-total').innerText = cov.overall.total_tests;
+                document.getElementById('stat-pass').innerText = cov.overall.passed;
+                document.getElementById('stat-partial').innerText = cov.overall.partial;
+                document.getElementById('stat-fail').innerText = cov.overall.failed;
+                document.getElementById('stat-blocked').innerText = cov.overall.blocked;
+                document.getElementById('stat-pending').innerText = cov.overall.pending;
+                document.getElementById('stat-rate').innerText = (cov.overall.pass_rate || cov.overall.pass_rate_pct || 0) + '%';
+
+                // Populate matrix table
+                const tbody = document.getElementById('matrix-body');
+                tbody.innerHTML = '';
+                cov.categories.forEach(cat => {
+                    const passRate = cat.total_tests > 0 ? Math.round((cat.passed / cat.total_tests) * 100) : 0;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${cat.category || cat.component}</strong></td>
+                        <td style="color: var(--text-muted); font-size: 0.78rem;">${cat.subcomponents.join(', ')}</td>
+                        <td style="text-align: center; font-weight: 600;">${cat.total_tests}</td>
+                        <td style="text-align: center; font-weight: 700; color: #34d399;">${cat.passed}</td>
+                        <td style="text-align: center; color: #fbbf24;">${cat.partial}</td>
+                        <td style="text-align: center; color: #f87171;">${cat.failed}</td>
+                        <td style="text-align: center; color: #94a3b8;">${cat.pending}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${passRate}%;"></div>
+                                </div>
+                                <span style="font-size: 0.75rem; font-weight: 600;">${passRate}%</span>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Failed to load coverage matrix:', e);
+            }
+        }
+
+        const COMPONENT_INPUT_TEMPLATES = {
+            "openaq_connectivity": {},
+            "station_discovery": {"query": "RV College of Engineering", "limit": 3},
+            "measurement_retrieval": {"station_id": 3409385},
+            "openaq_radius_cap": {"radius": 35000},
+            "openaq_pagination_meta": {"iso": "IN", "limit": 5, "page": 1},
+            "openaq_disambiguate_rvce": {"station_a": 3409385, "station_b": 3409386},
+            "openaq_staleness_detection": {"station_id": 3409385},
+            "openaq_historical_hourly": {"sensor_id": 11843284, "limit": 24},
+            "openaq_station_details": {"station_id": 3409385},
+            "geocoding_rvce": {"location": "RV College of Engineering, Bengaluru"},
+            "geocoding_fictional": {"location": "Narnia Fantasy Land 999XYZ"},
+            "coordinate_validation": {"latitude": 125.0, "longitude": 210.0},
+            "investigation_buffer_metric": {"latitude": 12.9232, "longitude": 77.5007, "radius_km": 2.0},
+            "geospatial_feature_classification": {"type": "facility", "name": "Industrial Substation"},
+            "research_crossref_search": {"query": "PM2.5 cardiovascular health", "limit": 3},
+            "research_doi_verify": {"doi": "10.1038/s41393-021-00744-z"},
+            "research_wikipedia_search": {"query": "Air pollution in India", "limit": 1},
+            "research_wikipedia_summary": {"title": "Air pollution in India"},
+            "research_scientific_integrity": {},
+            "pollutant_known_pm25": {"code": "pm25"},
+            "pollutant_unknown_rejection": {"code": "XYZ-927"},
+            "pollutant_comparison": {"codes": ["pm25", "pm10", "no2", "so2", "co", "o3"]},
+            "cause_analysis_medical_boundary": {"location": "Delhi", "observations": ["Cough and eye irritation"]},
+            "emission_source_classification": {"latitude": 12.9232, "longitude": 77.5007, "radius_km": 5.0},
+            "llm_multi_json_parser": {},
+            "llm_provider": {},
+            "tool_calling": {},
+            "mcp_server": {},
+            "mcp_client": {},
+            "api_sqlite_persistence": {},
+            "api_health": {}
+        };
+
+        function updateComponentInputTemplate() {
+            const comp = document.getElementById('comp-select').value;
+            const tpl = COMPONENT_INPUT_TEMPLATES[comp] || {};
+            document.getElementById('comp-input').value = JSON.stringify(tpl, null, 2);
+        }
+
+        async function executeComponentTest() {
+            const comp = document.getElementById('comp-select').value;
+            let inp = {};
+            try { inp = JSON.parse(document.getElementById('comp-input').value); } catch(e){}
+
+            const btn = document.getElementById('btn-run-comp');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+
+            try {
+                const res = await fetch('/api/qa/component/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({component: comp, custom_input: inp})
+                });
+                const data = await res.json();
+                document.getElementById('comp-res-id').innerText = data.test_id;
+                document.getElementById('comp-res-name').innerText = data.component;
+                document.getElementById('comp-res-time').innerText = data.execution_duration_ms + ' ms';
+                document.getElementById('comp-res-expected').innerText = data.expected_behavior;
+
+                const badge = document.getElementById('comp-status-badge');
+                badge.className = 'status-badge status-' + data.status;
+                badge.innerText = data.status;
+
+                document.getElementById('comp-res-output').innerText = JSON.stringify(data.actual_output || data.execution_evidence, null, 2);
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Component test failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Run Independent Test';
+            }
+        }
+
+        async function executeBatchComponentTests() {
+            const btn = document.getElementById('btn-batch-comp');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running All 31 Tests...';
+            try {
+                const res = await fetch('/api/qa/component/batch', {method: 'POST'});
+                const data = await res.json();
+                alert(`Executed ${data.length} component tests successfully!`);
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Batch component test failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-forward-step"></i> Execute All 31 Component Tests';
+            }
+        }
+
+        async function executeIntegrationTest() {
+            const scId = document.getElementById('integ-select').value;
+            const btn = document.getElementById('btn-run-integ');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running Workflow...';
+
+            try {
+                const res = await fetch('/api/qa/integration/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({scenario_id: scId})
+                });
+                const data = await res.json();
+                document.getElementById('integ-res-id').innerText = data.test_id;
+                document.getElementById('integ-res-time').innerText = data.execution_duration_ms + ' ms';
+
+                const badge = document.getElementById('integ-status-badge');
+                badge.className = 'status-badge status-' + data.status;
+                badge.innerText = data.status;
+
+                document.getElementById('integ-res-output').innerText = JSON.stringify(data.actual_output, null, 2);
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Integration test failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Execute Connected Workflow';
+            }
+        }
+
+        async function executeBatchIntegrationTests() {
+            const btn = document.getElementById('btn-batch-integ');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running 12 Scenarios...';
+            try {
+                const res = await fetch('/api/qa/integration/batch', {method: 'POST'});
+                const data = await res.json();
+                alert(`Executed ${data.length} integration scenarios successfully!`);
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Batch integration test failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-forward-step"></i> Execute All 12 Integration Scenarios';
+            }
+        }
+
+        async function executeAgentTest() {
+            const tcId = parseInt(document.getElementById('agent-tc-select').value);
+            const btn = document.getElementById('btn-run-agent');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Agent Running...';
+
+            try {
+                const res = await fetch('/api/qa/agent/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({test_case_id: tcId})
+                });
+                const data = await res.json();
+                const actual = data.actual_output || {};
+                document.getElementById('agent-run-id').innerText = actual.run_id || data.test_id || '—';
+                document.getElementById('agent-iterations').innerText = actual.iterations || '—';
+                document.getElementById('agent-tools').innerText = (actual.tools_called || []).join(', ') || (actual.scenario ? 'Direct Evaluation' : 'None');
+                document.getElementById('agent-dur').innerText = data.execution_duration_ms + ' ms';
+
+                const badge = document.getElementById('agent-status-badge');
+                badge.className = 'status-badge status-' + data.status;
+                badge.innerText = data.status;
+
+                // Render timeline
+                const events = (data.execution_evidence && data.execution_evidence.events) || [];
+                const timelineEl = document.getElementById('agent-timeline');
+                timelineEl.innerHTML = '';
+
+                if (events.length === 0) {
+                    timelineEl.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">Evaluation Output: <pre>${JSON.stringify(actual, null, 2)}</pre></p>`;
+                } else {
+                    events.forEach(evt => {
+                        const div = document.createElement('div');
+                        div.className = 'timeline-item';
+                        div.innerHTML = `
+                            <div class="timeline-header">
+                                <span style="color: #60a5fa;">${evt.event_type} (${evt.component})</span>
+                                <span style="color: #94a3b8; font-size: 0.75rem;">${evt.duration_ms ? evt.duration_ms + 'ms' : ''}</span>
+                            </div>
+                            <div class="timeline-body">
+                                <div>${evt.error_details ? '<span style="color: #f87171;">' + evt.error_details + '</span>' : JSON.stringify(evt.input_data || evt.output_data || {})}</div>
+                            </div>
+                        `;
+                        timelineEl.appendChild(div);
+                    });
+                }
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Agent test error: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Submit to Agent Endpoint';
+            }
+        }
+
+        async function executeBatchAgentTests() {
+            const btn = document.getElementById('btn-batch-agent');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running Agent Suite...';
+            try {
+                const res = await fetch('/api/qa/agent/batch', {method: 'POST'});
+                const data = await res.json();
+                alert(`Executed ${data.length} agent test scenarios successfully!`);
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Batch agent test failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-forward-step"></i> Execute Agent Benchmark Suite (10 Tests)';
+            }
+        }
+
+        const PREDEFINED_PROMPT_TEXTS = {
+            "P01": "Explain the environmental and human health impacts of PM2.5. Investigate its sources, atmospheric transport, exposure pathways, short-term effects and long-term consequences. Retrieve relevant scientific evidence and distinguish established findings from uncertainty.",
+            "P02": "Compare PM2.5, PM10, NO2, SO2, CO and O3. Explain their sources, atmospheric behaviour, environmental impacts and health implications. Include the differences between primary and secondary pollutants.",
+            "P03": "Investigate a fictional pollutant named XYZ-927. Determine whether its identity can be verified. Do not invent chemical properties, scientific papers or environmental impacts.",
+            "P04": "Find five peer-reviewed papers investigating PM2.5 exposure and human health. Return actual titles, authors, publication years and DOI identifiers where available. Verify the publication metadata and disclose if fewer than five valid papers are found.",
+            "P05": "Investigate scientific evidence concerning the effects of urban aerosols on regional precipitation. Identify differing findings and explain uncertainty.",
+            "P06": "Search for peer-reviewed publications about a deliberately obscure fictional atmospheric pollutant QX-999. If no valid research is found, explicitly report that.",
+            "P07": "A city reports elevated PM2.5, reduced visibility and increased respiratory complaints. Investigate possible sources including traffic, industry, biomass burning and meteorological conditions. Identify additional measurements needed to distinguish the hypotheses.",
+            "P08": "Investigate available air-quality measurements for Bengaluru. Retrieve actual monitoring stations and pollutant readings, identify their timestamps and units, and explain data availability limitations.",
+            "P09": "Retrieve historical PM2.5 measurements for a specified monitoring station. Explain the measurement frequency, timestamps and missing-data limitations.",
+            "P10": "Locate Delhi, Beijing, London and New York using real geocoding data. Plot the locations on an interactive map and label them as reference locations, not pollution hotspots.",
+            "P11": "Given a real monitoring station and its coordinates, create a configurable 2 km investigation buffer. Calculate its approximate area and explain why this is not a verified pollution dispersion boundary.",
+            "P12": "Plot a location at latitude 125 and longitude 210. Reject the coordinates and explain the validation failure.",
+            "P13": "Investigate elevated NO2 concentrations in Bengaluru. 1. Retrieve available measurements. 2. Identify actual monitoring stations. 3. Research NO2 impacts. 4. Investigate potential sources. 5. Perform geospatial analysis. 6. Visualize actual measurement locations.",
+            "P14": "Investigate whether elevated PM2.5 in a city could be associated with traffic, industrial emissions, biomass burning or meteorological conditions. Determine which data is needed, retrieve relevant evidence and use the available tools to build an evidence-backed assessment.",
+            "P15": "Investigate air pollution in a location when one external data provider is unavailable. Attempt another legitimate source if implemented. Report successful and failed sources. Never substitute fabricated readings.",
+            "P16": "Investigate air pollution in Springfield. Determine whether the location is ambiguous and request clarification when necessary.",
+            "P17": "Investigate air-quality measurements for an obscure location where no supported monitoring data is available. Do not invent a station or measurement.",
+            "P18": "Prepare a comprehensive air-pollution investigation for a user-specified city using real measurements, scientific literature, geospatial evidence and an interactive map. Explain the limitations of the evidence and identify what additional data is required.",
+            "P19": "Geocode RV College of Engineering, Bengaluru and generate a 2 km circular investigation buffer. Explain that the buffer is an estimated search area, not an atmospheric dispersion plume.",
+            "P20": "Investigate air quality in 'Narnia Fantasy Land 999XYZ'. Do not invent coordinates or monitoring stations; explain why the place cannot be geocoded.",
+            "P21": "Query monitoring stations across India using country code 'IN'. Demonstrate multi-page pagination and explain why page 1 alone does not represent total nationwide monitoring coverage.",
+            "P22": "Inspect station IDs 3409385 and 3409386. Determine whether they represent the same location or separate physical stations in different cities.",
+            "P23": "Search Wikipedia for environmental conditions in Bengaluru and retrieve an authentic article summary with canonical URL.",
+            "P24": "Retrieve a scholarly paper on atmospheric particulate matter from Crossref and independently verify its DOI metadata.",
+            "P25": "Search for industrial facilities near coordinates latitude 12.9232 and longitude 77.5007. Explain why proximity to an industrial facility does not prove it caused observed pollution levels.",
+            "P26": "Evaluate whether elevated particulate levels in Bengaluru are primarily due to vehicular traffic, industrial point sources, agricultural burning or boundary layer inversion.",
+            "P27": "Investigate air quality around station 3409385. If measurements are older than 24 hours, identify them as stale rather than presenting them as current conditions.",
+            "P28": "Investigate air quality when two nearby stations report sharply different PM2.5 readings. Formulate an inquiry into localized emission sources rather than averaging them away.",
+            "P29": "Find emission sources in USA. Evaluate the geographic capabilities of available tools and do not silently substitute a single city.",
+            "P30": "Find emission sources in California. Explain whether existing radius-based tools can cover a state-level investigation.",
+            "P31": "Find emission sources near RVCE. Geocode the location, search proximate industrial facilities, and explain that proximity does not prove causation.",
+            "P32": "Search for industrial emission sources in a rural zone where the database returns an empty list. Explain why an empty list does not prove zero emissions exist.",
+            "P33": "Investigate a region where OpenAQ returns 25 stations but none have active measurements. Explain why stations are not emission sources and why data is insufficient.",
+            "P34": "Investigate an atmospheric phenomenon where the primary data lookup fails. Evaluate the failure and fall back to scientific literature or encyclopedia retrieval.",
+            "P35": "Investigate air quality in an obscure location where all available monitoring and spatial searches yield no verifiable data. Declare the investigation INCONCLUSIVE."
+        };
+
+        function updatePromptPreview() {
+            const pId = document.getElementById('prompt-select').value;
+            document.getElementById('prompt-text').value = PREDEFINED_PROMPT_TEXTS[pId] || '';
+        }
+
+        async function executePromptTest() {
+            const pId = document.getElementById('prompt-select').value;
+            const pText = document.getElementById('prompt-text').value;
+
+            const btn = document.getElementById('btn-run-prompt');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Investigating...';
+
+            try {
+                const res = await fetch('/api/qa/prompt/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt_id: pId, custom_prompt: pText})
+                });
+                const data = await res.json();
+                const actual = data.actual_output || {};
+
+                const badge = document.getElementById('prompt-status-badge');
+                badge.className = 'status-badge status-' + data.status;
+                badge.innerText = data.status + ' (' + data.execution_duration_ms + 'ms)';
+
+                let summary = `=== FINAL ANSWER ===\n${actual.final_answer}\n\n=== VERIFICATION AUDIT ===\n` +
+                              `Tools Called: ${(actual.tools_called || []).join(', ') || 'None'}\n` +
+                              `Iterations: ${actual.iterations}\n` +
+                              `Citations Attached: ${actual.citations_count || 0}\n` +
+                              `Map Features Generated: ${actual.map_features_count || 0}`;
+
+                if (data.failure_explanation) {
+                    summary += `\n\n[FAILURE REASON]: ${data.failure_explanation}`;
+                }
+
+                document.getElementById('prompt-res-output').innerText = summary;
+                loadCoverageMatrix();
+            } catch(e) {
+                alert('Prompt execution failed: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Run Selected Prompt';
+            }
+        }
+
+        async function runPromptBatch(promptIds) {
+            for (const pid of promptIds) {
+                document.getElementById('prompt-select').value = pid;
+                updatePromptPreview();
+                await executePromptTest();
+            }
+            alert('Core prompt batch execution complete!');
+        }
+
+        async function executeBatchPromptTests() {
+            const pids = Object.keys(PREDEFINED_PROMPT_TEXTS);
+            if (!confirm(`Execute all ${pids.length} Prompt Arena evaluations? This runs live LLM ReAct reasoning on each prompt.`)) return;
+            for (const pid of pids) {
+                document.getElementById('prompt-select').value = pid;
+                updatePromptPreview();
+                await executePromptTest();
+            }
+            alert('All 28 Prompt Arena evaluations completed!');
+        }
+
+        async function executeFullSuite() {
+            if (!confirm("Run entire QA Suite (31 Component Tests, 12 Integration Workflows, 10 Agent Tests)?")) return;
+            await executeBatchComponentTests();
+            await executeBatchIntegrationTests();
+            await executeBatchAgentTests();
+            alert("Entire QA Suite execution completed!");
+            loadCoverageMatrix();
+        }
+
+        async function loadAuditReport() {
+            try {
+                const res = await fetch('/api/qa/audit');
+                const audit = await res.json();
+
+                document.getElementById('audit-score').innerText = audit.overall_readiness_score + '%';
+
+                // API Status table
+                const tbody = document.getElementById('audit-api-body');
+                tbody.innerHTML = '';
+                for (const [provider, status] of Object.entries(audit.api_connectivity)) {
+                    const isOnline = status.includes('ONLINE') || status.includes('CONNECTED');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${provider}</strong></td>
+                        <td><span class="status-badge ${isOnline ? 'status-PASS' : 'status-PARTIAL'}">${status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+
+                // Limitations
+                const limList = document.getElementById('audit-limitations');
+                limList.innerHTML = '';
+                audit.known_limitations.forEach(lim => {
+                    const li = document.createElement('li');
+                    li.innerText = lim;
+                    li.style.marginBottom = '0.4rem';
+                    limList.appendChild(li);
+                });
+
+                // Mock findings
+                const mockSummary = document.getElementById('audit-mock-summary');
+                const mockDetails = document.getElementById('audit-mock-details');
+                if (audit.mock_findings.length === 0) {
+                    mockSummary.innerHTML = '<i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Clean: 0 hardcoded runtime fixtures or fake data objects in production code.';
+                    mockDetails.innerHTML = '';
+                } else {
+                    mockSummary.innerHTML = `<span style="color: #f87171;">Warning: ${audit.mock_findings.length} suspicious pattern(s) identified.</span>`;
+                    mockDetails.innerHTML = `<pre>${JSON.stringify(audit.mock_findings, null, 2)}</pre>`;
+                }
+            } catch(e) {
+                console.error('Audit load failed:', e);
+            }
+        }
+
+        // Initialize on page load
+        updateComponentInputTemplate();
+        updatePromptPreview();
+        loadCoverageMatrix();
+    </script>
+</body>
+</html>

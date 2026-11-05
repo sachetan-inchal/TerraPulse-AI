@@ -1,0 +1,52 @@
+name: TerraPulse AIR CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Run Pytest Test Suite
+        env:
+          PYTHONPATH: backend
+        run: |
+          pytest backend/tests/ -v --maxfail=1
+
+      - name: Run QA Repository Integrity Audit
+        env:
+          PYTHONPATH: backend
+        run: |
+          python -c "from qa_engine import QAEngine; qa = QAEngine(); a = qa.run_repository_audit(); assert a.mocked_count == 0, f'Found {a.mocked_count} mock violations'; print('Audit PASSED! Readiness:', a.overall_readiness_score)"
+

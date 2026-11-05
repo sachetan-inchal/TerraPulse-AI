@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  terrapulse-app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: terrapulse-air
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAQ_API_KEY=${OPENAQ_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3-flash-preview}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite4.2:3b}
+      - OLLAMA_HOST=http://ollama:11434
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB_NAME=terrapulse_air
+    depends_on:
+      - mongodb
+    networks:
+      - terrapulse-net
+
+  mongodb:
+    image: mongo:7.0
+    container_name: terrapulse-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - terrapulse-net
+
+volumes:
+  mongo_data:
+
+networks:
+  terrapulse-net:
+    driver: bridge
+
